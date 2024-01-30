@@ -33,13 +33,12 @@ COLUMN_END          DW 150
 MAIN            PROC FAR
                 MOV AX,@DATA
                 MOV DS,AX
+                CALL CLEAR_SCREEN
 
-                MOV AH,0 ; set graphic mode
-                MOV AL,12H
-                INT 10H
 DR:
+                CALL CLEAR_SCREEN
                 CALL DRAW_SQUARE_OUTLINE
-                MOV CX,10000
+                MOV CX,1000
 BUSY_WA:
                 LOOP BUSY_WA
                 INC COLUMN_START
@@ -52,6 +51,13 @@ BUSY_WA:
                 INT 21H
 
 MAIN            ENDP
+
+CLEAR_SCREEN    PROC NEAR
+                MOV AH,0 ; set graphic mode
+                MOV AL,12H
+                INT 10H
+                RET
+CLEAR_SCREEN    ENDP
 
 ; This routine gets 2 arguments. (ROW, COLUMN)
 DRAW_DOT	    PROC NEAR
