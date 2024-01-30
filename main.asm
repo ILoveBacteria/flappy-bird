@@ -7,7 +7,7 @@ BIRD_HALF_SIZE      EQU 10
 DARK_BLUE           EQU 1
 GREEN               EQU 2
 LIGHT_BLUE          EQU 3
-ROW_END             EQU 4
+RED                 EQU 4
 PINK                EQU 5
 LIGHT_BROWN         EQU 6
 WHITE               EQU 7
