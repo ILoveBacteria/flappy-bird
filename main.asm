@@ -2,7 +2,7 @@
 .STACK 64
 
 .DATA
-BIRD_HALF_SIZE      EQU 10
+BIRD_HALF_SIZE      EQU 5
 
 BLACK               EQU 0
 DARK_BLUE           EQU 1
@@ -31,10 +31,12 @@ COLUMN_START        DW 5
 ROW_END             DW 20
 COLUMN_END          DW 80
 
-WALL_ROW_START           DW 10
-WALL_COLUMN_START        DW 5
-WALL_ROW_END             DW 20
-WALL_COLUMN_END          DW 80
+IS_BIRD_FLY         DB 0
+
+WALL_ROW_START           DW 130
+WALL_COLUMN_START        DW 300
+WALL_ROW_END             DW 200
+WALL_COLUMN_END          DW 320
 
 .CODE
 MAIN            PROC FAR
@@ -53,24 +55,40 @@ MAIN            ENDP
 
 TEST_CODE       PROC NEAR
 DR:
-                ;CALL CLEAR_SCREEN
-
+                ; Moving wall
                 CALL DELETE_WALL
 
-                INC WALL_COLUMN_END
-                INC WALL_COLUMN_START
+                DEC WALL_COLUMN_END
+                DEC WALL_COLUMN_START
                 MOV DOT_COLOR,GREEN
                 CALL DRAW_WALL
-
-                ;CALL DRAW_BIRD
+                ;Moving bird
+                MOV DOT_COLOR,BLACK
+                CALL DRAW_BIRD
+                ; If the bird is flying then move it up else move it down
+                CMP IS_BIRD_FLY,0
+                JZ ELSE1
+                DEC ROW_BIRD
+                JMP ELSE2
+ELSE1:          INC ROW_BIRD
+ELSE2:
+                MOV DOT_COLOR,WHITE
+                CALL DRAW_BIRD
+                ; Wait here
                 MOV CX,60000
-BUSY_WA1:
-                LOOP BUSY_WA1
+BUSY_WAIT:
+                LOOP BUSY_WAIT
                 
-                INC ROW_BIRD
-                MOV DX,300
-                CMP WALL_COLUMN_START,DX
-                JB DR
+                ; For simulation, change the IS_BIRD_FLY bit
+                CMP ROW_BIRD,70
+                JE TOGGLE
+                CMP ROW_BIRD,130
+                JNE ELSE3
+TOGGLE:
+                XOR IS_BIRD_FLY,1
+ELSE3:
+                CMP WALL_COLUMN_START,0
+                JG DR
                 RET
 TEST_CODE       ENDP
 
@@ -85,7 +103,7 @@ GET_OFFSET      ENDP
 ; This routine gets 2 arguments. (ROW, COLUMN)
 CLEAR_SCREEN    PROC NEAR
                 MOV AH,0 ; set graphic mode
-                MOV AL,13H
+                MOV AL,13H ; 320x200
                 INT 10H
                 RET
 CLEAR_SCREEN    ENDP
@@ -176,7 +194,7 @@ DRAW_SQUARE_OUTLINE         PROC NEAR
 DRAW_SQUARE_OUTLINE         ENDP
 
 
-; This routine gets 2 arguments. (ROW_BIRD, COLUMN_BIRD)
+; This routine gets 2 arguments. (ROW_BIRD, COLUMN_BIRD, DOT_COLOR)
 DRAW_BIRD       PROC NEAR
                 MOV DX,ROW_BIRD
                 MOV AX,COLUMN_BIRD
@@ -192,8 +210,7 @@ DRAW_BIRD       PROC NEAR
                 MOV ROW_END,DX
                 MOV COLUMN_END,AX
 
-                MOV DOT_COLOR,WHITE
-                CALL DRAW_SQUARE_FILL
+                CALL DRAW_SQUARE_OUTLINE
                 RET
 DRAW_BIRD	    ENDP
 
