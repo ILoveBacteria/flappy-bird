@@ -3,8 +3,20 @@
 
 .DATA
 BIRD_HALF_SIZE      EQU 10
-LIGHT_BLUE          EQU 11
+
 DARK_BLUE           EQU 1
+GREEN               EQU 2
+LIGHT_BLUE          EQU 3
+ROW_END             EQU 4
+PINK                EQU 5
+LIGHT_BROWN         EQU 6
+WHITE               EQU 7
+LIGHT_BLACK         EQU 8
+PURPLE              EQU 9
+LIGHT_GREEN         EQU 10
+CYAN                EQU 11
+ORANGE              EQU 12
+YELLOW              EQU 14
 
 ROW                 DW 120
 COLUMN              DW 100
