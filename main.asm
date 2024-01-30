@@ -26,45 +26,78 @@ COLUMN_BIRD         DW 100
 
 ROW_START           DW 10
 COLUMN_START        DW 5
-ROW_END             DW 200
-COLUMN_END          DW 150
+ROW_END             DW 20
+COLUMN_END          DW 80
+
+WALL_ROW_START           DW 10
+WALL_COLUMN_START        DW 5
+WALL_ROW_END             DW 20
+WALL_COLUMN_END          DW 80
 
 .CODE
 MAIN            PROC FAR
                 MOV AX,@DATA
                 MOV DS,AX
-                CALL CLEAR_SCREEN
 
-DR:
+                MOV AX,0A000H
+                MOV ES,AX
                 CALL CLEAR_SCREEN
-                CALL DRAW_SQUARE_OUTLINE
-                MOV CX,1000
-BUSY_WA:
-                LOOP BUSY_WA
-                INC COLUMN_START
-                INC COLUMN_END
-                MOV DX,028AH
-                CMP COLUMN_START,DX
-                JNE DR
+                CALL TEST_CODE
 
                 MOV AH,4CH ; exit program
                 INT 21H
 
 MAIN            ENDP
 
+TEST_CODE       PROC NEAR
+DR:
+                ;CALL CLEAR_SCREEN
+
+                MOV DX, WALL_ROW_START
+                MOV ROW_START,DX
+                MOV DX, WALL_COLUMN_START
+                MOV COLUMN_START,DX
+                MOV DX, WALL_ROW_END
+                MOV ROW_END,DX
+                MOV DX, WALL_COLUMN_END
+                MOV COLUMN_END,DX
+                CALL DRAW_SQUARE_OUTLINE
+
+                CALL DRAW_BIRD
+                MOV CX,60000
+BUSY_WA1:
+                LOOP BUSY_WA1
+                
+                INC WALL_COLUMN_START
+                INC WALL_COLUMN_END
+                INC ROW_BIRD
+                MOV DX,300
+                CMP WALL_COLUMN_START,DX
+                JNE DR
+                RET
+TEST_CODE       ENDP
+
+GET_OFFSET      PROC NEAR
+                MOV AX,320
+                MUL ROW
+                ADD AX,COLUMN
+                MOV BX,AX
+                RET
+GET_OFFSET      ENDP
+
+; This routine gets 2 arguments. (ROW, COLUMN)
 CLEAR_SCREEN    PROC NEAR
                 MOV AH,0 ; set graphic mode
-                MOV AL,12H
+                MOV AL,13H
                 INT 10H
                 RET
 CLEAR_SCREEN    ENDP
 
 ; This routine gets 2 arguments. (ROW, COLUMN)
 DRAW_DOT	    PROC NEAR
-                MOV AH,0CH ; write dot to the screen
-                MOV CX,COLUMN
-                MOV DX,ROW
-                INT 10H
+                CALL GET_OFFSET
+                MOV AX,CYAN
+                MOV ES:[BX],AX
                 RET
 DRAW_DOT	    ENDP
 
@@ -147,7 +180,6 @@ DRAW_SQUARE_OUTLINE         ENDP
 
 
 ; This routine gets 2 arguments. (ROW_BIRD, COLUMN_BIRD)
-; Fills 3x3
 DRAW_BIRD       PROC NEAR
                 MOV DX,ROW_BIRD
                 MOV AX,COLUMN_BIRD
@@ -163,7 +195,7 @@ DRAW_BIRD       PROC NEAR
                 MOV ROW_END,DX
                 MOV COLUMN_END,AX
 
-                MOV AL,DARK_BLUE
+                MOV AL,WHITE
                 CALL DRAW_SQUARE_FILL
                 RET
 DRAW_BIRD	    ENDP
