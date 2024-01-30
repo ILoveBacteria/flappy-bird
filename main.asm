@@ -6,16 +6,16 @@ BIRD_HALF_SIZE      EQU 10
 LIGHT_BLUE          EQU 11
 DARK_BLUE           EQU 1
 
-ROW                 DB ?
-COLUMN              DB ?
+ROW                 DB 120
+COLUMN              DB 100
 
 ROW_BIRD            DB 100
 COLUMN_BIRD         DB 100
 
-ROW_START           DB ?
-COLUMN_START        DB ?
-ROW_END             DB ?
-COLUMN_END          DB ?
+ROW_START           DB 10
+COLUMN_START        DB 5
+ROW_END             DB 200
+COLUMN_END          DB 150
 
 .CODE
 MAIN            PROC FAR
@@ -26,8 +26,7 @@ MAIN            PROC FAR
                 MOV AL,12H
                 INT 10H
 
-                CALL FILL_BACKGROUND
-                CALL DRAW_BIRD
+                CALL DRAW_SQUARE_OUTLINE
 
                 MOV AH,4CH ; exit program
                 INT 21H
@@ -39,37 +38,29 @@ DRAW_DOT	    PROC NEAR
                 MOV AH,0CH ; write dot to the screen
                 MOV CX,0
                 MOV DX,0
-                MOV CL,ROW
-                MOV DL,COLUMN
+                MOV CL,COLUMN
+                MOV DL,ROW
                 INT 10H
                 RET
 DRAW_DOT	    ENDP
 
 
 ; This routine gets 4 arguments. (ROW_START, COLUMN_START, ROW_END, COLUMN_END)
-DRAW_SQUARE         PROC NEAR
-                MOV DH,ROW_START                
+DRAW_SQUARE_FILL    PROC NEAR
+                    MOV DH,ROW_START                
 LOOP1:
-                MOV DL,COLUMN_START
-LOOP2:
-                MOV ROW,DH
-                MOV COLUMN,DL
+                    MOV ROW,DH
 
-                PUSH AX
-                PUSH DX
-                CALL DRAW_DOT
-                POP DX
-                POP AX
+                    PUSH DX
+                    CALL DRAW_HORIZONT_LINE
+                    POP DX
 
-                INC DL
-                CMP DL,COLUMN_END
-                JNE LOOP2
+                    INC DH
+                    CMP DH,ROW_END
+                    JNE LOOP1
 
-                INC DH
-                CMP DH,ROW_END
-                JNE LOOP1
                     RET
-DRAW_SQUARE         ENDP
+DRAW_SQUARE_FILL    ENDP
 
 
 ; This routine gets 4 arguments. (ROW_START, ROW_END, COLUMN)
@@ -108,51 +99,25 @@ DRAW_HORIZONT_LINE      ENDP
 
 ; This routine gets 4 arguments. (ROW_START, COLUMN_START, ROW_END, COLUMN_END)
 DRAW_SQUARE_OUTLINE         PROC NEAR
-                            MOV DH,ROW_START                
-                            MOV DL,COLUMN_START
 ;Draw upper line
-LOOP1:
+                            MOV DH,ROW_START                
                             MOV ROW,DH
-                            MOV COLUMN,DL
+                            CALL DRAW_HORIZONT_LINE
 
-                            PUSH AX
-                            PUSH DX
-                            CALL DRAW_DOT
-                            POP DX
-                            POP AX
-
-                            INC DL
-                            CMP DL,COLUMN_END
-                            JNE LOOP1
-;Draw right line
-LOOP2:
-                            MOV ROW,DH
-                            MOV COLUMN,DL
-
-                            PUSH AX
-                            PUSH DX
-                            CALL DRAW_DOT
-                            POP DX
-                            POP AX
-
-                            INC DH
-                            CMP DH,ROW_END
-                            JNE LOOP2
 ;Draw down line
-LOOP2:
+                            MOV DH,ROW_END                
                             MOV ROW,DH
-                            MOV COLUMN,DL
+                            CALL DRAW_HORIZONT_LINE
 
-                            PUSH AX
-                            PUSH DX
-                            CALL DRAW_DOT
-                            POP DX
-                            POP AX
+;Draw right line
+                            MOV DH,COLUMN_END                
+                            MOV COLUMN,DH
+                            CALL DRAW_VERTICAL_LINE
 
-                            INC DH
-                            CMP DH,ROW_END
-                            JNE LOOP2
-                            
+;Draw left line
+                            MOV DH,COLUMN_START                
+                            MOV COLUMN,DH
+                            CALL DRAW_VERTICAL_LINE
                             RET
 DRAW_SQUARE_OUTLINE         ENDP
 
@@ -175,7 +140,7 @@ DRAW_BIRD       PROC NEAR
                 MOV COLUMN_END,DH
 
                 MOV AL,DARK_BLUE
-                CALL DRAW_SQUARE
+                CALL DRAW_SQUARE_FILL
                 RET
 DRAW_BIRD	    ENDP
 
@@ -183,16 +148,5 @@ DRAW_WALL_UP    PROC NEAR
 
                 RET
 DRAW_WALL_UP    ENDP
-
-FILL_BACKGROUND PROC NEAR
-                MOV ROW_START,40
-                MOV COLUMN_START,0
-                MOV ROW_END,250
-                MOV COLUMN_END,250
-                MOV AL,LIGHT_BLUE
-                CALL DRAW_SQUARE
-                RET
-FILL_BACKGROUND ENDP
-
 
 END MAIN
