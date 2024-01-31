@@ -40,6 +40,9 @@ WALL_COLUMN_START   DW 300
 WALL_ROW_END        DW 200
 WALL_COLUMN_END     DW 320
 
+SCORE               DW 0
+SCORE_LENGTH        DW 0
+
 .CODE
 MAIN            PROC FAR
                 MOV AX,@DATA
@@ -59,7 +62,7 @@ TEST_CODE       PROC NEAR
 DR:
                 ; Moving wall
                 CALL DELETE_WALL
-
+                
                 DEC WALL_COLUMN_END
                 DEC WALL_COLUMN_START
                 MOV DOT_COLOR,GREEN
@@ -76,6 +79,11 @@ ELSE1:          INC ROW_BIRD
 ELSE2:
                 MOV DOT_COLOR,WHITE
                 CALL DRAW_BIRD
+                ; Hanfle score
+                CALL CLEAR_SCORE
+                MOV AX,SCORE
+                CALL PRINT_SCORE
+                INC SCORE
                 ; Wait here
                 MOV CX,60000
 BUSY_WAIT:
@@ -241,7 +249,6 @@ DELETE_WALL     PROC NEAR
                 MOV COLUMN,DX
                 MOV DOT_COLOR,BLACK
                 CALL DRAW_VERTICAL_LINE
-
                 ;Remove the left line
                 MOV DX,WALL_COLUMN_END
                 MOV COLUMN,DX
@@ -249,7 +256,7 @@ DELETE_WALL     PROC NEAR
                 RET
 DELETE_WALL     ENDP
 
-; Check the keyboard buffer for a key press. If a key is pressed, ZF will set 0.
+; Check the keyboard buffer for a key press. If a key is pressed, ZeroFlag will set 0.
 CHECK_KEY_PRESS PROC NEAR
                 MOV AH,01H
                 INT 16H
@@ -259,5 +266,40 @@ CHECK_KEY_PRESS PROC NEAR
 NO_KEY_PRESSED:
                 RET
 CHECK_KEY_PRESS ENDP
+
+; This routine gets 1 argument. (AX as SCORE)
+PRINT_SCORE     PROC NEAR
+                CMP AX,0
+                JNZ DIVIDE
+                RET
+DIVIDE:
+                ; word/word division - DX: remainder, AX: quotient
+                MOV DX,0
+                MOV BX,10
+                DIV BX
+                INC SCORE_LENGTH
+
+                PUSH DX ; Push the remainder to stack
+                CALL PRINT_SCORE
+                POP DX
+                ; Print the remainder
+                MOV AL,DL
+                ADD AL,30H
+                MOV AH,0EH
+                INT 10H
+                RET
+PRINT_SCORE     ENDP
+
+; Clears the score characters by writing back-space character
+; (SCORE_LENGTH)
+CLEAR_SCORE     PROC NEAR
+                MOV CX,SCORE_LENGTH
+LOOP1:
+                MOV AH,0EH
+                MOV AL,08H
+                INT 10H
+                LOOP LOOP1
+                RET
+CLEAR_SCORE     ENDP
 
 END MAIN
