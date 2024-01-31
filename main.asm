@@ -25,6 +25,8 @@ DOT_COLOR           DW 0
 
 ROW_BIRD            DW 100
 COLUMN_BIRD         DW 100
+VELOCITY_BIRD       DW 0
+ACCELERATION_BIRD   DW 1
 
 ROW_START           DW 10
 COLUMN_START        DW 5
@@ -33,10 +35,10 @@ COLUMN_END          DW 80
 
 IS_BIRD_FLY         DB 0
 
-WALL_ROW_START           DW 130
-WALL_COLUMN_START        DW 300
-WALL_ROW_END             DW 200
-WALL_COLUMN_END          DW 320
+WALL_ROW_START      DW 130
+WALL_COLUMN_START   DW 300
+WALL_ROW_END        DW 200
+WALL_COLUMN_END     DW 320
 
 .CODE
 MAIN            PROC FAR
@@ -80,10 +82,8 @@ BUSY_WAIT:
                 LOOP BUSY_WAIT
                 
                 ; For simulation, change the IS_BIRD_FLY bit
-                CMP ROW_BIRD,70
-                JE TOGGLE
-                CMP ROW_BIRD,130
-                JNE ELSE3
+                CALL CHECK_KEY_PRESS
+                JZ ELSE3
 TOGGLE:
                 XOR IS_BIRD_FLY,1
 ELSE3:
@@ -248,5 +248,16 @@ DELETE_WALL     PROC NEAR
                 CALL DRAW_VERTICAL_LINE
                 RET
 DELETE_WALL     ENDP
+
+; Check the keyboard buffer for a key press. If a key is pressed, ZF will set 0.
+CHECK_KEY_PRESS PROC NEAR
+                MOV AH,01H
+                INT 16H
+                JZ NO_KEY_PRESSED
+                MOV AH,0
+                INT 16H
+NO_KEY_PRESSED:
+                RET
+CHECK_KEY_PRESS ENDP
 
 END MAIN
