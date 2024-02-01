@@ -5,8 +5,6 @@
 SCREEN_WIDTH        EQU 320 - 1
 SCREEN_HEIGHT       EQU 200 - 1
 
-BIRD_HALF_SIZE      EQU 5
-
 BLACK               EQU 0
 DARK_BLUE           EQU 1
 GREEN               EQU 2
@@ -29,8 +27,11 @@ ROW                 DW 120
 COLUMN              DW 100
 DOT_COLOR           DW 0
 
-ROW_BIRD            DW 100
-COLUMN_BIRD         DW 100
+BIRD_SIZE           EQU 10
+ROW_BIRD_START      DW 100
+ROW_BIRD_END        DW 100 + BIRD_SIZE
+COLUMN_BIRD_START   DW 100
+COLUMN_BIRD_END     DW 100 + BIRD_SIZE
 VELOCITY_BIRD       DW 0
 ACCELERATION_BIRD   DW 1
 
@@ -66,6 +67,7 @@ MAIN            PROC FAR
 
 MAIN            ENDP
 
+
 TEST_CODE       PROC NEAR
 DR:
                 ; Wait here
@@ -82,12 +84,21 @@ DR:
                 ; If the bird is flying then move it up else move it down
                 CMP IS_BIRD_FLY,0
                 JZ ELSE1
-                DEC ROW_BIRD
+                DEC ROW_BIRD_START
+                DEC ROW_BIRD_END
                 JMP ELSE2
-ELSE1:          INC ROW_BIRD
+ELSE1:          
+                INC ROW_BIRD_START
+                INC ROW_BIRD_END
 ELSE2:
                 MOV DOT_COLOR,WHITE
                 CALL DRAW_BIRD
+                ; Check IS_GAMEOVER
+                CALL MARGIN_COLLISION
+                CMP IS_GAMEOVER,0
+                JZ CONTINUE_GAME
+                RET  
+CONTINUE_GAME:
                 ; Hanfle score
                 CALL CLEAR_SCORE
                 MOV AX,SCORE
@@ -104,12 +115,14 @@ ELSE3:
                 RET
 TEST_CODE       ENDP
 
+
 DELAY           PROC NEAR
                 MOV CX,60000
 BUSY_WAIT:
                 LOOP BUSY_WAIT                
                 RET
 DELAY           ENDP
+
 
 GET_OFFSET      PROC NEAR
                 MOV AX,320
@@ -119,6 +132,7 @@ GET_OFFSET      PROC NEAR
                 RET
 GET_OFFSET      ENDP
 
+
 ; This routine gets 2 arguments. (ROW, COLUMN)
 CLEAR_SCREEN    PROC NEAR
                 MOV AH,0 ; set graphic mode
@@ -126,6 +140,7 @@ CLEAR_SCREEN    PROC NEAR
                 INT 10H
                 RET
 CLEAR_SCREEN    ENDP
+
 
 ; This routine gets 2 arguments. (ROW, COLUMN, DOT_COLOR)
 DRAW_DOT	    PROC NEAR
@@ -215,23 +230,20 @@ DRAW_SQUARE_OUTLINE         ENDP
 
 ; This routine gets 2 arguments. (ROW_BIRD, COLUMN_BIRD, DOT_COLOR)
 DRAW_BIRD       PROC NEAR
-                MOV DX,ROW_BIRD
-                MOV AX,COLUMN_BIRD
-                SUB DX,BIRD_HALF_SIZE
-                SUB AX,BIRD_HALF_SIZE
+                MOV DX,ROW_BIRD_START
+                MOV AX,COLUMN_BIRD_START
                 MOV ROW_START,DX
                 MOV COLUMN_START,AX
 
-                MOV DX,ROW_BIRD
-                MOV AX,COLUMN_BIRD
-                ADD DX,BIRD_HALF_SIZE
-                ADD AX,BIRD_HALF_SIZE
+                MOV DX,ROW_BIRD_END
+                MOV AX,COLUMN_BIRD_END
                 MOV ROW_END,DX
                 MOV COLUMN_END,AX
 
                 CALL DRAW_SQUARE_OUTLINE
                 RET
 DRAW_BIRD	    ENDP
+
 
 ; (WALL_ROW_START, WALL_ROW_END, WALL_COLUMN_START, WALL_COLUMN_END, DOT_COLOR)
 DRAW_WALL       PROC NEAR
@@ -246,6 +258,7 @@ DRAW_WALL       PROC NEAR
                 CALL DRAW_SQUARE_OUTLINE
                 RET
 DRAW_WALL       ENDP
+
 
 ; (WALL_ROW_START, WALL_ROW_END, WALL_COLUMN_START, WALL_COLUMN_END)
 ; This routine does not clear the whole wall. Just deletes the left and right lines of wall to make it ready for moving.
@@ -267,6 +280,7 @@ DELETE_WALL     PROC NEAR
                 RET
 DELETE_WALL     ENDP
 
+
 ; Check the keyboard buffer for a key press. If a key is pressed, ZeroFlag will set 0.
 CHECK_KEY_PRESS PROC NEAR
                 MOV AH,01H
@@ -277,6 +291,7 @@ CHECK_KEY_PRESS PROC NEAR
 NO_KEY_PRESSED:
                 RET
 CHECK_KEY_PRESS ENDP
+
 
 ; This routine gets 1 argument. (AX as SCORE)
 PRINT_SCORE     PROC NEAR
@@ -301,6 +316,7 @@ DIVIDE:
                 RET
 PRINT_SCORE     ENDP
 
+
 ; Clears the score characters by writing back-space character
 ; (SCORE_LENGTH)
 CLEAR_SCORE     PROC NEAR
@@ -312,6 +328,7 @@ LOOP1:
                 LOOP LOOP1
                 RET
 CLEAR_SCORE     ENDP
+
 
 ; (TOP_MARGIN, SCREEN_WIDTH, BOTTOM_MARGIN)
 DRAW_MARGIN     PROC NEAR
@@ -325,22 +342,24 @@ DRAW_MARGIN     PROC NEAR
                 RET
 DRAW_MARGIN     ENDP
 
+
 ; Checks weather the bird is beyond margins or not
 ; Return IS_GAMEOVER
-; (ROW_BIRD, BIRD_HALF_SIZE, TOP_MARGIN, BOTTOM_MARGIN)
 MARGIN_COLLISION    PROC NEAR
-                    MOV DX,ROW_BIRD
-                    SUB DX,BIRD_HALF_SIZE
-                    CMP DX,TOP_MARGIN
+                    CMP ROW_BIRD_START,TOP_MARGIN
                     JBE GAMEOVER
-                    MOV DX,ROW_BIRD
-                    ADD DX,BIRD_HALF_SIZE
-                    CMP DX,BOTTOM_MARGIN
+                    CMP ROW_BIRD_END,BOTTOM_MARGIN
                     JAE GAMEOVER
                     RET
 GAMEOVER:
                     MOV IS_GAMEOVER,1
                     RET
 MARGIN_COLLISION    ENDP
+
+
+WALL_COLLISION      PROC NEAR
+                    
+                    RET
+WALL_COLLISION      ENDP
 
 END MAIN
