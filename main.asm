@@ -40,6 +40,7 @@ ROW_END             DW 20
 COLUMN_END          DW 80
 
 IS_BIRD_FLY         DB 0
+IS_GAMEOVER         DB 0
 
 WALL_ROW_START      DW 130
 WALL_COLUMN_START   DW 300
@@ -309,16 +310,34 @@ LOOP1:
                 RET
 CLEAR_SCORE     ENDP
 
+; (TOP_MARGIN, SCREEN_WIDTH, BOTTOM_MARGIN)
 DRAW_MARGIN     PROC NEAR
                 MOV DOT_COLOR,ORANGE
                 MOV ROW,TOP_MARGIN
                 MOV COLUMN_START,0
                 MOV COLUMN_END,SCREEN_WIDTH
                 CALL DRAW_HORIZONT_LINE
-
                 MOV ROW,BOTTOM_MARGIN
                 CALL DRAW_HORIZONT_LINE
                 RET
 DRAW_MARGIN     ENDP
+
+; Checks weather the bird is beyond margins or not
+; Return IS_GAMEOVER
+; (ROW_BIRD, BIRD_HALF_SIZE, TOP_MARGIN, BOTTOM_MARGIN)
+MARGIN_COLLISION    PROC NEAR
+                    MOV DX,ROW_BIRD
+                    SUB DX,BIRD_HALF_SIZE
+                    CMP DX,TOP_MARGIN
+                    JBE GAMEOVER
+                    MOV DX,ROW_BIRD
+                    ADD DX,BIRD_HALF_SIZE
+                    CMP DX,BOTTOM_MARGIN
+                    JAE GAMEOVER
+                    RET
+GAMEOVER:
+                    MOV IS_GAMEOVER,1
+                    RET
+MARGIN_COLLISION    ENDP
 
 END MAIN
