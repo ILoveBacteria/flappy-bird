@@ -69,6 +69,8 @@ MAIN            PROC FAR
 MAIN            ENDP
 
 
+; The main logic of the game
+; This routine gets no arguments and returns if the game is over
 TEST_CODE       PROC NEAR
 DR:
                 ; Wait here
@@ -118,6 +120,7 @@ ELSE3:
 TEST_CODE       ENDP
 
 
+; This routine makes a delay by busy waiting
 DELAY           PROC NEAR
                 MOV CX,60000
 BUSY_WAIT:
@@ -126,6 +129,9 @@ BUSY_WAIT:
 DELAY           ENDP
 
 
+; This routine generates the offset of pixel in memory segment
+; This routine gets 2 arguments. (ROW, COLUMN)
+; Return BX as OFFSET
 GET_OFFSET      PROC NEAR
                 MOV AX,320
                 MUL ROW
@@ -207,22 +213,19 @@ DRAW_HORIZONT_LINE      ENDP
 
 ; This routine gets 4 arguments. (ROW_START, COLUMN_START, ROW_END, COLUMN_END, DOT_COLOR)
 DRAW_SQUARE_OUTLINE         PROC NEAR
-;Draw upper line
+                            ;Draw upper line
                             MOV DX,ROW_START                
                             MOV ROW,DX
                             CALL DRAW_HORIZONT_LINE
-
-;Draw down line
+                            ;Draw down line
                             MOV DX,ROW_END                
                             MOV ROW,DX
                             CALL DRAW_HORIZONT_LINE
-
-;Draw right line
+                            ;Draw right line
                             MOV DX,COLUMN_END                
                             MOV COLUMN,DX
                             CALL DRAW_VERTICAL_LINE
-
-;Draw left line
+                            ;Draw left line
                             MOV DX,COLUMN_START                
                             MOV COLUMN,DX
                             CALL DRAW_VERTICAL_LINE
@@ -284,15 +287,15 @@ DELETE_WALL     ENDP
 
 
 ; Check the keyboard buffer for a key press. If a key is pressed, ZeroFlag will set 0.
-CHECK_KEY_PRESS PROC NEAR
-                MOV AH,01H
-                INT 16H
-                JZ NO_KEY_PRESSED
-                MOV AH,0
-                INT 16H
+CHECK_KEY_PRESS     PROC NEAR
+                    MOV AH,01H
+                    INT 16H
+                    JZ NO_KEY_PRESSED
+                    MOV AH,0
+                    INT 16H
 NO_KEY_PRESSED:
-                RET
-CHECK_KEY_PRESS ENDP
+                    RET
+CHECK_KEY_PRESS     ENDP
 
 
 ; This routine gets 1 argument. (AX as SCORE)
