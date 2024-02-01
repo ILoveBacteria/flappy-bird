@@ -2,6 +2,9 @@
 .STACK 64
 
 .DATA
+SCREEN_WIDTH        EQU 320 - 1
+SCREEN_HEIGHT       EQU 200 - 1
+
 BIRD_HALF_SIZE      EQU 5
 
 BLACK               EQU 0
@@ -18,6 +21,9 @@ LIGHT_GREEN         EQU 10
 CYAN                EQU 11
 ORANGE              EQU 12
 YELLOW              EQU 14
+
+TOP_MARGIN          EQU 10
+BOTTOM_MARGIN       EQU SCREEN_HEIGHT
 
 ROW                 DW 120
 COLUMN              DW 100
@@ -37,8 +43,8 @@ IS_BIRD_FLY         DB 0
 
 WALL_ROW_START      DW 130
 WALL_COLUMN_START   DW 300
-WALL_ROW_END        DW 200
-WALL_COLUMN_END     DW 320
+WALL_ROW_END        DW BOTTOM_MARGIN - 1
+WALL_COLUMN_END     DW SCREEN_WIDTH
 
 SCORE               DW 0
 SCORE_LENGTH        DW 0
@@ -51,6 +57,7 @@ MAIN            PROC FAR
                 MOV AX,0A000H
                 MOV ES,AX
                 CALL CLEAR_SCREEN
+                CALL DRAW_MARGIN
                 CALL TEST_CODE
 
                 MOV AH,4CH ; exit program
@@ -301,5 +308,17 @@ LOOP1:
                 LOOP LOOP1
                 RET
 CLEAR_SCORE     ENDP
+
+DRAW_MARGIN     PROC NEAR
+                MOV DOT_COLOR,ORANGE
+                MOV ROW,TOP_MARGIN
+                MOV COLUMN_START,0
+                MOV COLUMN_END,SCREEN_WIDTH
+                CALL DRAW_HORIZONT_LINE
+
+                MOV ROW,BOTTOM_MARGIN
+                CALL DRAW_HORIZONT_LINE
+                RET
+DRAW_MARGIN     ENDP
 
 END MAIN
