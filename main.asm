@@ -42,6 +42,7 @@ COLUMN_END          DW 80
 
 IS_BIRD_FLY         DB 0
 IS_GAMEOVER         DB 0
+IS_POINT_IN_WALL    DB 0
 
 WALL_ROW_START      DW 130
 WALL_COLUMN_START   DW 300
@@ -95,6 +96,7 @@ ELSE2:
                 CALL DRAW_BIRD
                 ; Check IS_GAMEOVER
                 CALL MARGIN_COLLISION
+                CALL WALL_COLLISION
                 CMP IS_GAMEOVER,0
                 JZ CONTINUE_GAME
                 RET  
@@ -357,9 +359,65 @@ GAMEOVER:
 MARGIN_COLLISION    ENDP
 
 
+; Checks if any point of bird is in wall or not
 WALL_COLLISION      PROC NEAR
-                    
+                    ; right down corner
+                    MOV DX,ROW_BIRD_END
+                    MOV ROW,DX
+                    MOV DX,COLUMN_BIRD_END
+                    MOV COLUMN,DX
+                    CALL POINT_IN_WALL
+                    CMP IS_POINT_IN_WALL,1
+                    JE GAMEOVER
+                    ; left down corner
+                    MOV DX,ROW_BIRD_END
+                    MOV ROW,DX
+                    MOV DX,COLUMN_BIRD_START
+                    MOV COLUMN,DX
+                    CALL POINT_IN_WALL
+                    CMP IS_POINT_IN_WALL,1
+                    JE GAMEOVER
+                    ; left up corner
+                    MOV DX,ROW_BIRD_START
+                    MOV ROW,DX
+                    MOV DX,COLUMN_BIRD_START
+                    MOV COLUMN,DX
+                    CALL POINT_IN_WALL
+                    CMP IS_POINT_IN_WALL,1
+                    JE GAMEOVER
+                    ; right up corner
+                    MOV DX,ROW_BIRD_START
+                    MOV ROW,DX
+                    MOV DX,COLUMN_BIRD_END
+                    MOV COLUMN,DX
+                    CALL POINT_IN_WALL
+                    CMP IS_POINT_IN_WALL,1
+                    JE GAMEOVER
+                    RET
+GAMEOVER:
+                    MOV IS_GAMEOVER,1
                     RET
 WALL_COLLISION      ENDP
+
+
+; Checks is (ROW,COLUMN) in a wall or not
+; Return IS_POINT_IN_WALL
+POINT_IN_WALL       PROC NEAR
+                    MOV DX,ROW
+                    MOV AX,COLUMN
+                    CMP DX,WALL_ROW_START
+                    JB NOT_IN_WALL
+                    CMP DX,WALL_ROW_END
+                    JA NOT_IN_WALL
+                    CMP AX,WALL_COLUMN_START
+                    JB NOT_IN_WALL
+                    CMP AX,WALL_COLUMN_END
+                    JA NOT_IN_WALL
+                    MOV IS_POINT_IN_WALL,1
+                    RET
+NOT_IN_WALL:
+                    MOV IS_POINT_IN_WALL,0
+                    RET
+POINT_IN_WALL       ENDP
 
 END MAIN
