@@ -68,9 +68,10 @@ MAIN            ENDP
 
 TEST_CODE       PROC NEAR
 DR:
+                ; Wait here
+                CALL DELAY
                 ; Moving wall
                 CALL DELETE_WALL
-                
                 DEC WALL_COLUMN_END
                 DEC WALL_COLUMN_START
                 MOV DOT_COLOR,GREEN
@@ -92,11 +93,6 @@ ELSE2:
                 MOV AX,SCORE
                 CALL PRINT_SCORE
                 INC SCORE
-                ; Wait here
-                MOV CX,60000
-BUSY_WAIT:
-                LOOP BUSY_WAIT
-                
                 ; For simulation, change the IS_BIRD_FLY bit
                 CALL CHECK_KEY_PRESS
                 JZ ELSE3
@@ -107,6 +103,13 @@ ELSE3:
                 JG DR
                 RET
 TEST_CODE       ENDP
+
+DELAY           PROC NEAR
+                MOV CX,60000
+BUSY_WAIT:
+                LOOP BUSY_WAIT                
+                RET
+DELAY           ENDP
 
 GET_OFFSET      PROC NEAR
                 MOV AX,320
