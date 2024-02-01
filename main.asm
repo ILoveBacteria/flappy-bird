@@ -28,12 +28,13 @@ COLUMN              DW 100
 DOT_COLOR           DW 0
 
 BIRD_SIZE           EQU 10
-ROW_BIRD_START      DW 100
-ROW_BIRD_END        DW 100 + BIRD_SIZE
+ROW_BIRD_START      DW 20
+ROW_BIRD_END        DW 20 + BIRD_SIZE
 COLUMN_BIRD_START   DW 100
 COLUMN_BIRD_END     DW 100 + BIRD_SIZE
 VELOCITY_BIRD       DW 0
 ACCELERATION_BIRD   DW 1
+FLY_VELOCITY_BIRD   DW 0FFF9H
 
 ROW_START           DW 10
 COLUMN_START        DW 5
@@ -84,16 +85,7 @@ DR:
                 ;Moving bird
                 MOV DOT_COLOR,BLACK
                 CALL DRAW_BIRD
-                ; If the bird is flying then move it up else move it down
-                CMP IS_BIRD_FLY,0
-                JZ ELSE1
-                DEC ROW_BIRD_START
-                DEC ROW_BIRD_END
-                JMP ELSE2
-ELSE1:          
-                INC ROW_BIRD_START
-                INC ROW_BIRD_END
-ELSE2:
+                CALL MOVE_BIRD
                 MOV DOT_COLOR,WHITE
                 CALL DRAW_BIRD
                 ; Check IS_GAMEOVER
@@ -110,10 +102,10 @@ CONTINUE_GAME:
                 INC SCORE
                 ; For simulation, change the IS_BIRD_FLY bit
                 CALL CHECK_KEY_PRESS
-                JZ ELSE3
-TOGGLE:
-                XOR IS_BIRD_FLY,1
-ELSE3:
+                JZ KEY_NOT_PRESSED
+                MOV DX,FLY_VELOCITY_BIRD
+                MOV VELOCITY_BIRD,DX
+KEY_NOT_PRESSED:
                 CMP WALL_COLUMN_START,0
                 JG DR
                 RET
@@ -422,5 +414,28 @@ NOT_IN_WALL:
                     MOV IS_POINT_IN_WALL,0
                     RET
 POINT_IN_WALL       ENDP
+
+
+; Calculate the new position of the bird with Makan-Zaman equation
+; new_position = old_position + (old_velocity * time) + (0.5 * acceleration * time * time)
+; new_velocity = old_velocity + (acceleration * time)
+; This routine gets 3 arguments. (ROW_BIRD, COLUMN_BIRD, VELOCITY_BIRD, ACCELERATION_BIRD)
+MOVE_BIRD   PROC NEAR
+            ; Calculate new ROW_BIRD_START
+            MOV AX,ACCELERATION_BIRD
+            MOV BX,2
+            MOV DX,0
+            DIV BX ; Result is in AX
+            MOV DX,VELOCITY_BIRD
+            ADD ROW_BIRD_START,DX
+            ADD ROW_BIRD_START,AX
+            ; Calculate new ROW_BIRD_END
+            ADD ROW_BIRD_END,DX
+            ADD ROW_BIRD_END,AX
+            ; Calculate new VELOCITY_BIRD
+            ADD DX,ACCELERATION_BIRD
+            MOV VELOCITY_BIRD,DX
+            RET
+MOVE_BIRD   ENDP
 
 END MAIN
