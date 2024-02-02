@@ -48,7 +48,7 @@ IS_POINT_IN_WALL    DB 0
 WALL_ROW_START      DW 130
 WALL_COLUMN_START   DW 300
 WALL_ROW_END        DW BOTTOM_MARGIN - 1
-WALL_COLUMN_END     DW SCREEN_WIDTH
+WALL_COLUMN_END     DW 300+20
 
 SCORE               DW 0
 SCORE_LENGTH        DW 0
@@ -77,11 +77,7 @@ DR:
                 ; Wait here
                 CALL DELAY
                 ; Moving wall
-                CALL DELETE_WALL
-                DEC WALL_COLUMN_END
-                DEC WALL_COLUMN_START
-                MOV DOT_COLOR,GREEN
-                CALL DRAW_WALL
+                CALL MOVE_WALL
                 ;Moving bird
                 MOV DOT_COLOR,BLACK
                 CALL DRAW_BIRD
@@ -106,8 +102,7 @@ CONTINUE_GAME:
                 MOV DX,FLY_VELOCITY_BIRD
                 MOV VELOCITY_BIRD,DX
 KEY_NOT_PRESSED:
-                CMP WALL_COLUMN_START,0
-                JG DR
+                JMP DR
                 RET
 TEST_CODE       ENDP
 
@@ -278,6 +273,33 @@ DELETE_WALL     PROC NEAR
 DELETE_WALL     ENDP
 
 
+; This routine deletes wall and shift it to the left and draw a new wall
+; If the wall is out of the screen, it will be removed and a new wall will be drawn
+MOVE_WALL       PROC NEAR
+                MOV DX,WALL_COLUMN_START
+                CMP DX,1
+                JA SHIFT_AND_DRAW
+                ; Delete whole wall
+                MOV DOT_COLOR,BLACK
+                CALL DRAW_WALL
+                ; Change the wall position
+                MOV BX,40
+                CALL RANDOM_NUMBER ; Get a random number between 0 and 40 in DX
+                MOV AX,SCREEN_WIDTH
+                SUB AX,DX
+                MOV WALL_COLUMN_START,AX
+                MOV WALL_COLUMN_END,SCREEN_WIDTH
+                RET
+SHIFT_AND_DRAW:
+                CALL DELETE_WALL
+                DEC WALL_COLUMN_END
+                DEC WALL_COLUMN_START
+                MOV DOT_COLOR,GREEN
+                CALL DRAW_WALL
+                RET
+MOVE_WALL       ENDP
+
+
 ; Check the keyboard buffer for a key press. If a key is pressed, ZeroFlag will set 0.
 CHECK_KEY_PRESS     PROC NEAR
                     MOV AH,01H ; check keyboard buffer is empty or not
@@ -439,5 +461,18 @@ MOVE_BIRD   PROC NEAR
             MOV VELOCITY_BIRD,DX
             RET
 MOVE_BIRD   ENDP
+
+
+; Gets 1 argument (BX as maximum number)
+; Return a random number between 0 and BX in DX
+RANDOM_NUMBER   PROC NEAR
+                MOV AX,0 ; Get clock ticks
+                INT 1AH
+                ; Byte/Byte division - DX: remainder, AX: quotient
+                MOV AX,DX
+                MOV DX,0
+                DIV BX
+                RET
+RANDOM_NUMBER   ENDP
 
 END MAIN
