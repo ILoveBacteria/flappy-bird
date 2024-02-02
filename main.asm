@@ -311,6 +311,7 @@ MOVE_WALL       PROC NEAR
                 ; Find the last wall column in WALL array
                 MOV AL,WALL_INDEX
                 ADD AL,2 ; go to the last wall
+                INC WALL_INDEX
                 ; Get the remainder of AL/3. because we have 3 walls
                 MOV AH,0
                 MOV BL,3
@@ -318,18 +319,40 @@ MOVE_WALL       PROC NEAR
                 MOV DI,SI ; copy the current wall index to DI
                 MOV AL,AH ; copy wall index to AL
                 CALL INIT_WALL_INDEX ; now SI points to the last wall
-                ; Generate a random number
+                ; Generate a random number for width of wall
                 MOV BX,5
                 CALL RANDOM_NUMBER ; Get a random number between 0 and 4 in DX
                 MOV AL,10
                 MUL DL ; result in AX
-                ; set new values
+                ; set new columns value
                 MOV DX,[SI]+6 ; get the last wall column_end
                 ADD DX,100
                 MOV [DI]+2,DX ; set the new column_start
                 ADD DX,AX
                 MOV [DI]+6,DX ; set the new column_end
-                INC WALL_INDEX
+                ; Generate a random number for height of wall
+                MOV BX,10
+                CALL RANDOM_NUMBER ; Get a random number between 0 and 9 in DX
+                INC DX ; DX is between 1 and 10
+                MOV AL,10
+                MUL DL ; result in AX
+                MOV SI,AX ; Copy the height to SI
+                ; Generate a random number for position of wall (down margin or up margin)
+                MOV BX,2
+                CALL RANDOM_NUMBER ; Get a random number between 0 and 1 in DX
+                CMP DX,0
+                JNZ WALL_UP
+
+                MOV DX,BOTTOM_MARGIN-1
+                MOV [DI]+4,DX
+                SUB DX,SI
+                MOV [DI],DX ; set the new row_start
+                RET
+WALL_UP:
+                MOV DX,TOP_MARGIN+1
+                MOV [DI],DX
+                ADD DX,SI
+                MOV [DI]+4,DX
                 RET
 SHIFT_AND_DRAW:
                 ; Check the wall is in the screen or not
