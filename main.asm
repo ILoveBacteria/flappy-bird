@@ -133,7 +133,7 @@ GET_OFFSET      PROC NEAR
 GET_OFFSET      ENDP
 
 
-; This routine gets 2 arguments. (ROW, COLUMN)
+; This routine sets the video mode to 320x200
 CLEAR_SCREEN    PROC NEAR
                 MOV AH,0 ; set graphic mode
                 MOV AL,13H ; 320x200
@@ -142,7 +142,7 @@ CLEAR_SCREEN    PROC NEAR
 CLEAR_SCREEN    ENDP
 
 
-; This routine gets 2 arguments. (ROW, COLUMN, DOT_COLOR)
+; This routine gets 3 arguments. (ROW, COLUMN, DOT_COLOR)
 DRAW_DOT	    PROC NEAR
                 CALL GET_OFFSET
                 MOV DX,DOT_COLOR
@@ -151,7 +151,7 @@ DRAW_DOT	    PROC NEAR
 DRAW_DOT	    ENDP
 
 
-; This routine gets 4 arguments. (ROW_START, COLUMN_START, ROW_END, COLUMN_END, DOT_COLOR)
+; This routine gets 5 arguments. (ROW_START, COLUMN_START, ROW_END, COLUMN_END, DOT_COLOR)
 DRAW_SQUARE_FILL    PROC NEAR
                     MOV DX,ROW_START                
 LOOP1:
@@ -203,7 +203,7 @@ LOOP1:
 DRAW_HORIZONT_LINE      ENDP
 
 
-; This routine gets 4 arguments. (ROW_START, COLUMN_START, ROW_END, COLUMN_END, DOT_COLOR)
+; This routine gets 5 arguments. (ROW_START, COLUMN_START, ROW_END, COLUMN_END, DOT_COLOR)
 DRAW_SQUARE_OUTLINE         PROC NEAR
                             ;Draw upper line
                             MOV DX,ROW_START                
@@ -225,7 +225,7 @@ DRAW_SQUARE_OUTLINE         PROC NEAR
 DRAW_SQUARE_OUTLINE         ENDP
 
 
-; This routine gets 2 arguments. (ROW_BIRD, COLUMN_BIRD, DOT_COLOR)
+; This routine gets 5 arguments. (ROW_BIRD_START, COLUMN_BIRD_START, ROW_BIRD_END, COLUMN_BIRD_END, DOT_COLOR)
 DRAW_BIRD       PROC NEAR
                 MOV DX,ROW_BIRD_START
                 MOV AX,COLUMN_BIRD_START
@@ -280,10 +280,10 @@ DELETE_WALL     ENDP
 
 ; Check the keyboard buffer for a key press. If a key is pressed, ZeroFlag will set 0.
 CHECK_KEY_PRESS     PROC NEAR
-                    MOV AH,01H
+                    MOV AH,01H ; check keyboard buffer is empty or not
                     INT 16H
                     JZ NO_KEY_PRESSED
-                    MOV AH,0
+                    MOV AH,0 ; read key from keyboard buffer (clear buffer)
                     INT 16H
 NO_KEY_PRESSED:
                     RET
@@ -395,7 +395,8 @@ GAMEOVER:
 WALL_COLLISION      ENDP
 
 
-; Checks is (ROW,COLUMN) in a wall or not
+; Checks is (ROW,COLUMN) in a wall or not. This routine will be called 4 times for each corner of the bird.
+; The WALL_COLLISION routine will call this routine 4 times.
 ; Return IS_POINT_IN_WALL
 POINT_IN_WALL       PROC NEAR
                     MOV DX,ROW
@@ -419,7 +420,8 @@ POINT_IN_WALL       ENDP
 ; Calculate the new position of the bird with Makan-Zaman equation
 ; new_position = old_position + (old_velocity * time) + (0.5 * acceleration * time * time)
 ; new_velocity = old_velocity + (acceleration * time)
-; This routine gets 3 arguments. (ROW_BIRD, COLUMN_BIRD, VELOCITY_BIRD, ACCELERATION_BIRD)
+; The time value is always 1 because the time unit is 1 cycle of the game loop.
+; (ROW_BIRD, COLUMN_BIRD, VELOCITY_BIRD, ACCELERATION_BIRD)
 MOVE_BIRD   PROC NEAR
             ; Calculate new ROW_BIRD_START
             MOV AX,ACCELERATION_BIRD
