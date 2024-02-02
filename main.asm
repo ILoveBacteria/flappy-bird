@@ -285,12 +285,15 @@ MOVE_WALL       PROC NEAR
                 ; Delete whole wall
                 MOV DOT_COLOR,BLACK
                 CALL DRAW_WALL
+                ; Generate a random number
+                MOV BX,5
+                CALL RANDOM_NUMBER ; Get a random number between 0 and 4 in DX
+                MOV AL,10
+                MUL DL ; result in AX
                 ; Change the wall position
-                MOV BX,40
-                CALL RANDOM_NUMBER ; Get a random number between 0 and 40 in DX
-                MOV AX,SCREEN_WIDTH
-                SUB AX,DX
-                MOV WALL_COLUMN_START,AX
+                MOV DX,SCREEN_WIDTH
+                SUB DX,AX
+                MOV WALL_COLUMN_START,DX
                 MOV WALL_COLUMN_END,SCREEN_WIDTH
                 RET
 SHIFT_AND_DRAW:
