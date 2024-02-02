@@ -45,10 +45,9 @@ IS_BIRD_FLY         DB 0
 IS_GAMEOVER         DB 0
 IS_POINT_IN_WALL    DB 0
 
-WALL_ROW_START      DW 130
-WALL_COLUMN_START   DW 300
-WALL_ROW_END        DW BOTTOM_MARGIN - 1
-WALL_COLUMN_END     DW 300+20
+; ROW_START, COLUMN_START, ROW_END, COLUMN_END
+WALL                DW 130,300,BOTTOM_MARGIN-1,300+20,150,420,BOTTOM_MARGIN-1,420+20,170,540,BOTTOM_MARGIN-1,540+20
+WALL_INDEX          DB 0
 
 SCORE               DW 0
 SCORE_LENGTH        DW 0
@@ -79,8 +78,15 @@ TEST_CODE       PROC NEAR
 DR:
                 ; Wait here
                 CALL DELAY
-                ; Moving wall
+                ; Moving and draw wall
+                MOV AL,0
+LOOP_WALL1:
+                PUSH AX
                 CALL MOVE_WALL
+                POP AX
+                INC AL
+                CMP AL,3
+                JB LOOP_WALL1
                 ;Moving bird
                 MOV DOT_COLOR,BLACK
                 CALL DRAW_BIRD
@@ -239,36 +245,49 @@ DRAW_BIRD       PROC NEAR
 DRAW_BIRD	    ENDP
 
 
-; (WALL_ROW_START, WALL_ROW_END, WALL_COLUMN_START, WALL_COLUMN_END, DOT_COLOR)
+; This routine initializes the SI register to point to the WALL array element
+; Gets argument (AL as WALL_INDEX)
+INIT_WALL_INDEX PROC NEAR
+                LEA SI,WALL
+                ; OFFSET = 4 * 2 * WALL_INDEX
+                MOV AH,8
+                MUL AH ; AX = 8 * WALL_INDEX
+                ADD SI,AX
+                RET
+INIT_WALL_INDEX ENDP
+
+
+; (DOT_COLOR, SI as WALL_INDEX)
 DRAW_WALL       PROC NEAR
-                MOV DX, WALL_ROW_START
+                ; Read array elements
+                MOV DX,[SI]
                 MOV ROW_START,DX
-                MOV DX, WALL_COLUMN_START
+                MOV DX,[SI]+2
                 MOV COLUMN_START,DX
-                MOV DX, WALL_ROW_END
+                MOV DX,[SI]+4
                 MOV ROW_END,DX
-                MOV DX, WALL_COLUMN_END
+                MOV DX,[SI]+6
                 MOV COLUMN_END,DX
                 CALL DRAW_SQUARE_OUTLINE
                 RET
 DRAW_WALL       ENDP
 
 
-; (WALL_ROW_START, WALL_ROW_END, WALL_COLUMN_START, WALL_COLUMN_END)
+; (WALL, SI as WALL_INDEX)
 ; This routine does not clear the whole wall. Just deletes the left and right lines of wall to make it ready for moving.
 ; Has more perfoemance than clearing whole wall and then draw a new shifted wall
 DELETE_WALL     PROC NEAR
                 ;Remove the left line
-                MOV DX, WALL_ROW_START
+                MOV DX,[SI]
                 MOV ROW_START,DX
-                MOV DX, WALL_ROW_END
-                MOV ROW_END,DX
-                MOV DX,WALL_COLUMN_START
+                MOV DX,[SI]+2
                 MOV COLUMN,DX
+                MOV DX,[SI]+4
+                MOV ROW_END,DX
                 MOV DOT_COLOR,BLACK
                 CALL DRAW_VERTICAL_LINE
                 ;Remove the left line
-                MOV DX,WALL_COLUMN_END
+                MOV DX,[SI]+6
                 MOV COLUMN,DX
                 CALL DRAW_VERTICAL_LINE
                 RET
@@ -277,31 +296,64 @@ DELETE_WALL     ENDP
 
 ; A top level routine that is called in each game loop cycle
 ; This routine deletes wall and shift it to the left and draw a new wall
-; If the wall is out of the screen, it will be removed and a new wall will be drawn
+; If the wall is out of the screen, it will be removed and a new wall will be generated
+; Gets (AL as WALL_INDEX)
 MOVE_WALL       PROC NEAR
-                MOV DX,WALL_COLUMN_START
+                CALL INIT_WALL_INDEX
+                ; Check the wall reached to the left margin or not
+                MOV DX,[SI]+2
                 CMP DX,1
                 JA SHIFT_AND_DRAW
                 ; Delete whole wall
                 MOV DOT_COLOR,BLACK
                 CALL DRAW_WALL
+                ; Change the wall position
+                ; Find the last wall column in WALL array
+                MOV AL,WALL_INDEX
+                ADD AL,2 ; go to the last wall
+                ; Get the remainder of AL/3. because we have 3 walls
+                MOV AH,0
+                MOV BL,3
+                DIV BL ; remainder in AH
+                MOV DI,SI ; copy the current wall index to DI
+                MOV AL,AH ; copy wall index to AL
+                CALL INIT_WALL_INDEX ; now SI points to the last wall
                 ; Generate a random number
                 MOV BX,5
                 CALL RANDOM_NUMBER ; Get a random number between 0 and 4 in DX
                 MOV AL,10
                 MUL DL ; result in AX
-                ; Change the wall position
-                MOV DX,SCREEN_WIDTH
-                SUB DX,AX
-                MOV WALL_COLUMN_START,DX
-                MOV WALL_COLUMN_END,SCREEN_WIDTH
+                ; set new values
+                MOV DX,[SI]+6 ; get the last wall column_end
+                ADD DX,100
+                MOV [DI]+2,DX ; set the new column_start
+                ADD DX,AX
+                MOV [DI]+6,DX ; set the new column_end
+                INC WALL_INDEX
                 RET
 SHIFT_AND_DRAW:
+                ; Check the wall is in the screen or not
+                MOV DX,[SI]+6
+                CMP DX,SCREEN_WIDTH
+                JAE JUST_MOVE_IT
                 CALL DELETE_WALL
-                DEC WALL_COLUMN_END
-                DEC WALL_COLUMN_START
+                ; Shift the wall to the left
+                MOV DX,[SI]+2
+                DEC DX
+                MOV [SI]+2,DX
+                MOV DX,[SI]+6
+                DEC DX
+                MOV [SI]+6,DX
                 MOV DOT_COLOR,GREEN
                 CALL DRAW_WALL
+                RET
+JUST_MOVE_IT:
+                MOV DX,[SI]+2
+                DEC DX
+                MOV [SI]+2,DX
+                MOV DX,[SI]+6
+                DEC DX
+                MOV [SI]+6,DX
                 RET
 MOVE_WALL       ENDP
 
@@ -404,12 +456,16 @@ MARGIN_COLLISION    ENDP
 
 ; Checks if any point of bird is in wall or not
 WALL_COLLISION      PROC NEAR
+                    MOV AL,0
+WALL_LOOP:
                     ; right down corner
                     MOV DX,ROW_BIRD_END
                     MOV ROW,DX
                     MOV DX,COLUMN_BIRD_END
                     MOV COLUMN,DX
+                    PUSH AX
                     CALL POINT_IN_WALL
+                    POP AX
                     CMP IS_POINT_IN_WALL,1
                     JE GAMEOVER
                     ; left down corner
@@ -417,7 +473,9 @@ WALL_COLLISION      PROC NEAR
                     MOV ROW,DX
                     MOV DX,COLUMN_BIRD_START
                     MOV COLUMN,DX
+                    PUSH AX
                     CALL POINT_IN_WALL
+                    POP AX
                     CMP IS_POINT_IN_WALL,1
                     JE GAMEOVER
                     ; left up corner
@@ -425,7 +483,9 @@ WALL_COLLISION      PROC NEAR
                     MOV ROW,DX
                     MOV DX,COLUMN_BIRD_START
                     MOV COLUMN,DX
+                    PUSH AX
                     CALL POINT_IN_WALL
+                    POP AX
                     CMP IS_POINT_IN_WALL,1
                     JE GAMEOVER
                     ; right up corner
@@ -433,9 +493,15 @@ WALL_COLLISION      PROC NEAR
                     MOV ROW,DX
                     MOV DX,COLUMN_BIRD_END
                     MOV COLUMN,DX
+                    PUSH AX
                     CALL POINT_IN_WALL
+                    POP AX
                     CMP IS_POINT_IN_WALL,1
                     JE GAMEOVER
+                    ; Next wall
+                    INC AL
+                    CMP AL,3
+                    JB WALL_LOOP
                     RET
 GAMEOVER:
                     MOV IS_GAMEOVER,1
@@ -443,19 +509,21 @@ GAMEOVER:
 WALL_COLLISION      ENDP
 
 
+; Gets (AL as WALL_INDEX)
 ; Checks is (ROW,COLUMN) in a wall or not. This routine will be called 4 times for each corner of the bird.
 ; The WALL_COLLISION routine will call this routine 4 times.
 ; Return IS_POINT_IN_WALL
 POINT_IN_WALL       PROC NEAR
+                    CALL INIT_WALL_INDEX
                     MOV DX,ROW
                     MOV AX,COLUMN
-                    CMP DX,WALL_ROW_START
+                    CMP DX,[SI]
                     JB NOT_IN_WALL
-                    CMP DX,WALL_ROW_END
+                    CMP DX,[SI]+4
                     JA NOT_IN_WALL
-                    CMP AX,WALL_COLUMN_START
+                    CMP AX,[SI]+2
                     JB NOT_IN_WALL
-                    CMP AX,WALL_COLUMN_END
+                    CMP AX,[SI]+6
                     JA NOT_IN_WALL
                     MOV IS_POINT_IN_WALL,1
                     RET
