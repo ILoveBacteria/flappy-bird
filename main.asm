@@ -52,6 +52,7 @@ WALL_COLUMN_END     DW 300+20
 
 SCORE               DW 0
 SCORE_LENGTH        DW 0
+NUMBER_STRING       DB 4 DUP ('$')
 
 .CODE
 MAIN            PROC FAR
@@ -62,6 +63,8 @@ MAIN            PROC FAR
                 MOV ES,AX
                 CALL CLEAR_SCREEN
                 CALL DRAW_MARGIN
+                MOV AX,SCORE
+                CALL PRINT_SCORE
                 CALL TEST_CODE
 
                 MOV AH,4CH ; exit program
@@ -91,11 +94,10 @@ DR:
                 JZ CONTINUE_GAME
                 RET  
 CONTINUE_GAME:
-                ; Hanfle score
+                ; Handle changing the score
                 CALL CLEAR_SCORE
-                MOV AX,SCORE
-                CALL PRINT_SCORE
                 INC SCORE
+                CALL PRINT_SCORE
                 ; For simulation, change the IS_BIRD_FLY bit
                 CALL CHECK_KEY_PRESS
                 JZ KEY_NOT_PRESSED
@@ -273,6 +275,7 @@ DELETE_WALL     PROC NEAR
 DELETE_WALL     ENDP
 
 
+; A top level routine that is called in each game loop cycle
 ; This routine deletes wall and shift it to the left and draw a new wall
 ; If the wall is out of the screen, it will be removed and a new wall will be drawn
 MOVE_WALL       PROC NEAR
@@ -312,28 +315,48 @@ NO_KEY_PRESSED:
 CHECK_KEY_PRESS     ENDP
 
 
-; This routine gets 1 argument. (AX as SCORE)
+; This routine prints the score on the screen
 PRINT_SCORE     PROC NEAR
-                CMP AX,0
-                JNZ DIVIDE
-                RET
-DIVIDE:
-                ; word/word division - DX: remainder, AX: quotient
-                MOV DX,0
-                MOV BX,10
-                DIV BX
-                INC SCORE_LENGTH
-
-                PUSH DX ; Push the remainder to stack
-                CALL PRINT_SCORE
-                POP DX
-                ; Print the remainder
-                MOV AL,DL
-                ADD AL,30H
+                MOV AX,SCORE
+                CALL NUMBER_TO_STRING
+                LEA SI,NUMBER_STRING
+                MOV CX,SCORE_LENGTH
+                ; Print the characters
+LOOP1:
+                MOV AL,[SI]
                 MOV AH,0EH
                 INT 10H
+                INC SI
+                LOOP LOOP1
                 RET
 PRINT_SCORE     ENDP
+
+
+; This routine converts AX number to string
+; (AX as number)
+NUMBER_TO_STRING    PROC NEAR
+                    MOV CX,0
+                    MOV BX,10
+                    LEA SI,NUMBER_STRING
+DIVIDE:
+                    ; word/word division - DX: remainder, AX: quotient
+                    MOV DX,0
+                    DIV BX
+                    INC CX
+
+                    PUSH DX ; Push the remainder to stack
+                    CMP AX,0
+                    JNZ DIVIDE
+                    MOV SCORE_LENGTH,CX
+CONVERT:
+                    POP DX
+                    ; Print the digit
+                    ADD DL,30H
+                    MOV [SI],DL
+                    INC SI
+                    LOOP CONVERT
+                    RET
+NUMBER_TO_STRING    ENDP
 
 
 ; Clears the score characters by writing back-space character
