@@ -48,10 +48,16 @@ IS_POINT_IN_WALL    DB 0
 ; ROW_START, COLUMN_START, ROW_END, COLUMN_END
 WALL                DW 130,300,BOTTOM_MARGIN-1,300+20,150,420,BOTTOM_MARGIN-1,420+20,170,540,BOTTOM_MARGIN-1,540+20
 WALL_INDEX          DB 0
+WALL_MAX_WIDTH      DW 5
 
 SCORE               DW 0
 SCORE_LENGTH        DW 0
 NUMBER_STRING       DB 4 DUP ('$')
+
+; 1 EASY - 2 MEDIUM - 3 HARD
+MODE                DB ?
+FLAG                DB 0
+MODE_STRING         DB 'Choose the mode 1 EASY,2 MEDIUM,3 HARD: ','$'
 
 .CODE
 MAIN            PROC FAR
@@ -60,6 +66,7 @@ MAIN            PROC FAR
 
                 MOV AX,0A000H
                 MOV ES,AX
+                CALL WELCOME_SCREEN
                 CALL CLEAR_SCREEN
                 CALL DRAW_MARGIN
                 MOV AX,SCORE
@@ -71,6 +78,24 @@ MAIN            PROC FAR
 
 MAIN            ENDP
 
+
+WELCOME_SCREEN  PROC NEAR
+                MOV AH,09H ; Option 09 writes a string of data to stdout.
+                LEA DX,MODE_STRING ; Loads character input message into DX.
+                INT 21H
+                MOV AH,01H ; Option 01 reads one character from stdin.
+                INT 21H
+                SUB AL,'0' ; Converts ASCII number to binary number by subtracting the offset.
+                MOV MODE,AL
+                CMP AL,3
+                JE HARD
+                RET
+HARD:
+                MOV ACCELERATION_BIRD,2
+                MOV FLY_VELOCITY_BIRD,0FFF5H
+                MOV WALL_MAX_WIDTH,1
+                RET
+WELCOME_SCREEN  ENDP
 
 ; The main logic of the game
 ; This routine gets no arguments and returns if the game is over
@@ -117,10 +142,26 @@ TEST_CODE       ENDP
 
 ; This routine makes a delay by busy waiting
 DELAY           PROC NEAR
-                MOV CX,60000
-BUSY_WAIT:
-                LOOP BUSY_WAIT                
+                CMP MODE,1
+                JE EASY_DELAY
+                CMP MODE,2
+                JE MEDIUM_DELAY
+                MOV CX,10000
+BUSY_WAIT1:
+                LOOP BUSY_WAIT1
                 RET
+EASY_DELAY:
+                MOV CX,0FFFFH
+BUSY_WAIT2:
+                LOOP BUSY_WAIT2
+                MOV CX,0FFFFH
+BUSY_WAIT3:
+                LOOP BUSY_WAIT3
+                RET
+MEDIUM_DELAY:
+                MOV CX,60000
+BUSY_WAIT4:
+                LOOP BUSY_WAIT4
 DELAY           ENDP
 
 
@@ -320,7 +361,7 @@ MOVE_WALL       PROC NEAR
                 MOV AL,AH ; copy wall index to AL
                 CALL INIT_WALL_INDEX ; now SI points to the last wall
                 ; Generate a random number for width of wall
-                MOV BX,5
+                MOV BX,WALL_MAX_WIDTH
                 CALL RANDOM_NUMBER ; Get a random number between 0 and 4 in DX
                 MOV AL,10
                 MUL DL ; result in AX
@@ -561,23 +602,31 @@ POINT_IN_WALL       ENDP
 ; new_velocity = old_velocity + (acceleration * time)
 ; The time value is always 1 because the time unit is 1 cycle of the game loop.
 ; (ROW_BIRD, COLUMN_BIRD, VELOCITY_BIRD, ACCELERATION_BIRD)
-MOVE_BIRD   PROC NEAR
-            ; Calculate new ROW_BIRD_START
-            MOV AX,ACCELERATION_BIRD
-            MOV BX,2
-            MOV DX,0
-            DIV BX ; Result is in AX
-            MOV DX,VELOCITY_BIRD
-            ADD ROW_BIRD_START,DX
-            ADD ROW_BIRD_START,AX
-            ; Calculate new ROW_BIRD_END
-            ADD ROW_BIRD_END,DX
-            ADD ROW_BIRD_END,AX
-            ; Calculate new VELOCITY_BIRD
-            ADD DX,ACCELERATION_BIRD
-            MOV VELOCITY_BIRD,DX
-            RET
-MOVE_BIRD   ENDP
+MOVE_BIRD       PROC NEAR
+                CMP MODE,3
+                JNE CHANGE_POSITION
+                CMP FLAG,2
+                JAE CHANGE_POSITION
+                INC FLAG
+                RET
+CHANGE_POSITION:
+                MOV FLAG,0
+                ; Calculate new ROW_BIRD_START
+                MOV AX,ACCELERATION_BIRD
+                MOV BX,2
+                MOV DX,0
+                DIV BX ; Result is in AX
+                MOV DX,VELOCITY_BIRD
+                ADD ROW_BIRD_START,DX
+                ADD ROW_BIRD_START,AX
+                ; Calculate new ROW_BIRD_END
+                ADD ROW_BIRD_END,DX
+                ADD ROW_BIRD_END,AX
+                ; Calculate new VELOCITY_BIRD
+                ADD DX,ACCELERATION_BIRD
+                MOV VELOCITY_BIRD,DX
+                RET
+MOVE_BIRD       ENDP
 
 
 ; Gets 1 argument (BX as maximum number)
