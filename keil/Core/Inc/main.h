@@ -57,9 +57,9 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Blue_PushButton_Pin GPIO_PIN_13
-#define Blue_PushButton_GPIO_Port GPIOC
-#define Blue_PushButton_EXTI_IRQn EXTI15_10_IRQn
+#define JUMP_Pin GPIO_PIN_13
+#define JUMP_GPIO_Port GPIOC
+#define JUMP_EXTI_IRQn EXTI15_10_IRQn
 #define RS_Pin GPIO_PIN_0
 #define RS_GPIO_Port GPIOC
 #define RW_Pin GPIO_PIN_1
@@ -82,12 +82,13 @@ void Error_Handler(void);
 #define D6_GPIO_Port GPIOA
 #define D7_Pin GPIO_PIN_7
 #define D7_GPIO_Port GPIOA
+#define JUMP2_Pin GPIO_PIN_0
+#define JUMP2_GPIO_Port GPIOB
+#define JUMP2_EXTI_IRQn EXTI0_IRQn
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define JUMP_Pin GPIO_PIN_15
-#define JUMP_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
 

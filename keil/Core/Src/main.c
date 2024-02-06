@@ -109,7 +109,9 @@ void lcd_enable(void) {
 
 void lcd_output_data(uint16_t data) {
 	D0_GPIO_Port->ODR &= ~(0xFFUL << 0); // clear data
+	GPIOC->ODR &= ~(3UL << 8); // clear data
 	D0_GPIO_Port->ODR |= (data << 0);
+	GPIOC->ODR |= (data << 6);
 }
 
 void lcd_command(uint8_t command) {
@@ -135,10 +137,9 @@ void lcd_print_string(uint8_t *string) {
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-  if(GPIO_Pin == JUMP_Pin) {
     send_key = 1;
-  }
 }
+
 /* USER CODE END 0 */
 
 /**
@@ -206,13 +207,19 @@ int main(void)
 			done = 0;
 			HAL_UART_Receive_IT(&huart6, (uint8_t*)vtbuf, 1);
 		}
-  }
-	
+  
 	if (!recieving_score && send_key) {
 		uint8_t jump[] = {0xFF};
 		HAL_UART_Transmit(&huart6, jump, 1, HAL_MAX_DELAY);
 		send_key = 0;
 	}
+	
+}
+	/*if (!recieving_score && send_key) {
+		uint8_t jump[] = {0xFF};
+		HAL_UART_Transmit(&huart6, jump, 1, HAL_MAX_DELAY);
+		send_key = 0;
+	}*/
   /* USER CODE END 3 */
 }
 
@@ -308,20 +315,23 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, RS_Pin|RW_Pin|E_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, RS_Pin|RW_Pin|E_Pin|GPIO_PIN_8
+                          |GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, D0_Pin|D1_Pin|D2_Pin|D3_Pin
                           |D4_Pin|D5_Pin|D6_Pin|D7_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : Blue_PushButton_Pin */
-  GPIO_InitStruct.Pin = Blue_PushButton_Pin;
+  /*Configure GPIO pin : JUMP_Pin */
+  GPIO_InitStruct.Pin = JUMP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(Blue_PushButton_GPIO_Port, &GPIO_InitStruct);
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(JUMP_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RS_Pin RW_Pin E_Pin */
-  GPIO_InitStruct.Pin = RS_Pin|RW_Pin|E_Pin;
+  /*Configure GPIO pins : RS_Pin RW_Pin E_Pin PC8
+                           PC9 */
+  GPIO_InitStruct.Pin = RS_Pin|RW_Pin|E_Pin|GPIO_PIN_8
+                          |GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -336,13 +346,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : JUMP_Pin */
-  GPIO_InitStruct.Pin = JUMP_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pin : JUMP2_Pin */
+  GPIO_InitStruct.Pin = JUMP2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(JUMP_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(JUMP2_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
