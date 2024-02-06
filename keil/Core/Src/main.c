@@ -133,6 +133,12 @@ void lcd_print_string(uint8_t *string) {
 		string++;
 	}
 }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+  if(GPIO_Pin == JUMP_Pin) {
+    send_key = 1;
+  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -201,6 +207,12 @@ int main(void)
 			HAL_UART_Receive_IT(&huart6, (uint8_t*)vtbuf, 1);
 		}
   }
+	
+	if (!recieving_score && send_key) {
+		uint8_t jump[] = {0xFF};
+		HAL_UART_Transmit(&huart6, jump, 1, HAL_MAX_DELAY);
+		send_key = 0;
+	}
   /* USER CODE END 3 */
 }
 
@@ -329,6 +341,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(JUMP_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

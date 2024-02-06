@@ -138,7 +138,12 @@ CONTINUE_GAME:
                 CALL SEND_SCORE_UART
                 ; For simulation, change the IS_BIRD_FLY bit
                 CALL CHECK_KEY_PRESS
-                JZ KEY_NOT_PRESSED
+                CMP BX,1
+                JE KEY_IS_PRESSED
+                CALL CHECK_UART_CONTROLLER_KEY
+                CMP BX,0
+                JE KEY_NOT_PRESSED
+KEY_IS_PRESSED:
                 MOV DX,FLY_VELOCITY_BIRD
                 MOV VELOCITY_BIRD,DX
 KEY_NOT_PRESSED:
@@ -430,15 +435,33 @@ MOVE_WALL       ENDP
 
 
 ; Check the keyboard buffer for a key press. If a key is pressed, ZeroFlag will set 0.
+; Return BX as is a key press
 CHECK_KEY_PRESS     PROC NEAR
                     MOV AH,01H ; check keyboard buffer is empty or not
                     INT 16H
                     JZ NO_KEY_PRESSED
                     MOV AH,0 ; read key from keyboard buffer (clear buffer)
                     INT 16H
+                    MOV BX,1
+                    RET
 NO_KEY_PRESSED:
+                    MOV BX,0
                     RET
 CHECK_KEY_PRESS     ENDP
+
+
+; Return BX as is a key press
+CHECK_UART_CONTROLLER_KEY   PROC NEAR
+                            MOV DX,COM1
+                            IN AL,DX
+                            CMP AL,0FFH
+                            JNE NO_KEY_PRESSED
+                            MOV BX,1
+                            RET
+NO_KEY_PRESSED:
+                            MOV BX,0
+                            RET
+CHECK_UART_CONTROLLER_KEY   ENDP
 
 
 ; This routine prints the score on the screen
