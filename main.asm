@@ -2,6 +2,8 @@
 .STACK 64
 
 .DATA
+COM1                EQU 03F8H
+
 SCREEN_WIDTH        EQU 320 - 1
 SCREEN_HEIGHT       EQU 200 - 1
 
@@ -51,8 +53,11 @@ WALL_INDEX          DB 0
 WALL_MAX_WIDTH      DW 5
 
 SCORE               DW 0
-SCORE_LENGTH        DW 0
-NUMBER_STRING       DB 4 DUP ('$')
+SCORE_LENGTH        DW 3
+; 5 characters for score. 1 character for null terminator.
+NUMBER_STRING       DB 6 DUP (' ')
+
+TEMP                DB 'B'
 
 ; 1 EASY - 2 MEDIUM - 3 HARD
 MODE                DB ?
@@ -66,6 +71,7 @@ MAIN            PROC FAR
 
                 MOV AX,0A000H
                 MOV ES,AX
+                CALL INIT_UART
                 CALL WELCOME_SCREEN
                 CALL CLEAR_SCREEN
                 CALL DRAW_MARGIN
@@ -129,6 +135,7 @@ CONTINUE_GAME:
                 CALL CLEAR_SCORE
                 INC SCORE
                 CALL PRINT_SCORE
+                CALL SEND_SCORE_UART
                 ; For simulation, change the IS_BIRD_FLY bit
                 CALL CHECK_KEY_PRESS
                 JZ KEY_NOT_PRESSED
@@ -640,5 +647,45 @@ RANDOM_NUMBER   PROC NEAR
                 DIV BX
                 RET
 RANDOM_NUMBER   ENDP
+
+
+INIT_UART       PROC NEAR
+                MOV AH,0
+                MOV AL,10100011B ; baudrate = 2400, 8 bit data, 1 stop bit, no parity
+                MOV DX,0 ; serial1
+                INT 14H
+                RET
+INIT_UART       ENDP
+
+
+; Sends the NUMBER_STRING to COM1
+SEND_SCORE_UART PROC NEAR
+                MOV AX,SCORE
+                MOV DX,0
+                MOV BX,10
+                DIV BX ; remainder in DX
+                CMP DX,0
+                JZ SEND
+                RET
+SEND:
+                ; send first byte of score
+                MOV DX,COM1
+                MOV CX,SCORE
+
+                MOV AL,CL
+                OUT DX,AL
+WAIT_ACK1:
+                IN AL,DX
+                CMP AL,1
+                JNE WAIT_ACK1          
+                ; send second byte of score
+                MOV AL,CH
+                OUT DX,AL
+WAIT_ACK2:
+                IN AL,DX
+                CMP AL,2
+                JNE WAIT_ACK2
+                RET
+SEND_SCORE_UART ENDP
 
 END MAIN
